@@ -406,15 +406,32 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
   Bitboard pinned = pos.pinned_pieces(pos.side_to_move());
   Square ksq = pos.square<KING>(pos.side_to_move());
   ExtMove* cur = moveList;
+  ExtMove* cur2 = moveList;
+  bool hasCaptures = false;
 
   moveList = pos.checkers() ? generate<EVASIONS    >(pos, moveList)
                             : generate<NON_EVASIONS>(pos, moveList);
-  while (cur != moveList)
-      if (   (pinned || from_sq(*cur) == ksq || type_of(*cur) == ENPASSANT)
-          && !pos.legal(*cur))
-          *cur = (--moveList)->move;
-      else
-          ++cur;
+  while (cur != moveList) {
+    if((pinned || from_sq(*cur) == ksq || type_of(*cur) == ENPASSANT) && !pos.legal(*cur)) {
+      *cur = (--moveList)->move;
+    } else {
+      if(pos.capture(cur->move)) {
+        hasCaptures = true;
+      }
+      ++cur;
+    }
+  }
+
+  if(hasCaptures) {
+    // filter list to be only captures
+    while(cur2 != moveList) {
+      if(!pos.capture(cur2->move)) {
+        *cur2 = (--moveList)->move;
+      } else {
+        ++cur2;
+      }
+    }
+  }
 
   return moveList;
 }
